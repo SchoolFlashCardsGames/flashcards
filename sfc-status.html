@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SchoolFlashCards5 - System Status</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%A7</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:"Comic Sans MS", cursive, sans-serif; }
+
+    :root{
+        --primary:#4ECDC4;
+        --accent:#FFE66D;
+        --dark:#292F36;
+        --light:#F7FFF7;
+        --button:#FF6B6B;
+    }
+
+    body{ background:var(--light); color:var(--dark); }
+    .pixel{ font-family:"Press Start 2P", cursive; }
+
+    header{ background:var(--primary); padding:15px 0; box-shadow:0 2px 10px rgba(0,0,0,.1); }
+    .container{ width:92%; max-width:760px; margin:0 auto; }
+    .header-content{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .logo{ font-size:24px; font-weight:bold; color:white; text-decoration:none; }
+    .logo span{ color:var(--accent); }
+    nav ul{ display:flex; list-style:none; gap:14px; }
+    nav ul li a{ color:white; text-decoration:none; font-weight:bold; font-size:13px; }
+    nav ul li a:hover{ color:var(--accent); }
+
+    main{ padding:30px 0 60px; }
+
+    .last-checked{
+        display:flex; align-items:center; justify-content:flex-end; gap:10px;
+        font-size:12px; color:#888; margin-bottom:14px;
+    }
+    .refresh-btn{
+        background:white; border:2px solid var(--primary); color:var(--primary); font-weight:bold;
+        border-radius:20px; padding:4px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px;
+        transition:transform .15s;
+    }
+    .refresh-btn:hover{ transform:scale(1.05); }
+    .refresh-icon{ display:inline-block; transition:transform .5s; }
+    .refresh-icon.spin{ transform:rotate(360deg); }
+
+    .overall-banner{
+        border-radius:12px; padding:20px 24px; margin-bottom:24px; color:var(--dark);
+        display:flex; align-items:center; gap:16px; box-shadow:0 3px 10px rgba(0,0,0,.08);
+    }
+    .overall-banner.state-maintenance{ background:#FFF7DE; border:2px solid var(--accent); }
+    .overall-banner.state-operational{ background:#E9FBF9; border:2px solid var(--primary); }
+    .overall-banner.state-outage{ background:#FFECEC; border:2px solid var(--button); }
+    .overall-icon{ font-size:34px; }
+    .overall-title{ font-size:18px; font-weight:bold; margin-bottom:2px; }
+    .overall-sub{ font-size:13px; color:#666; }
+
+    .card{
+        background:white; border-radius:12px; box-shadow:0 3px 12px rgba(0,0,0,.08);
+        padding:20px 22px; margin-bottom:24px;
+    }
+    .card h2{ font-size:16px; margin-bottom:6px; }
+    .card .card-sub{ font-size:12px; color:#888; margin-bottom:10px; }
+
+    .component-row{ padding:14px 0; border-bottom:1px solid #eee; }
+    .component-row:last-child{ border-bottom:none; }
+    .component-top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+    .component-name{ font-weight:bold; font-size:14px; }
+    .component-name .auto-tag{ font-size:10px; font-weight:normal; color:#aaa; margin-left:6px; }
+
+    .status-badge{
+        display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:bold;
+        padding:4px 10px; border-radius:20px;
+    }
+    .status-badge.operational{ background:rgba(78,205,196,.18); color:#238b83; }
+    .status-badge.maintenance{ background:rgba(255,230,109,.35); color:#8a6d00; }
+    .status-badge.outage{ background:rgba(255,107,107,.2); color:#c23b3b; }
+
+    .status-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+    .status-dot.operational{ background:var(--primary); }
+    .status-dot.maintenance{ background:var(--accent); }
+    .status-dot.outage{ background:var(--button); }
+    .status-dot.pulse{ animation:pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse{
+        0%,100%{ box-shadow:0 0 0 0 rgba(0,0,0,.18); }
+        50%{ box-shadow:0 0 0 5px rgba(0,0,0,0); }
+    }
+
+    .uptime-row{ display:flex; gap:2px; margin-bottom:5px; }
+    .uptime-cell{ flex:1; height:24px; border-radius:2px; cursor:default; }
+    .uptime-cell.operational{ background:var(--primary); }
+    .uptime-cell.maintenance{ background:var(--accent); }
+    .uptime-cell.outage{ background:var(--button); }
+    .uptime-cell.unknown{ background:#eee; }
+
+    .uptime-meta{ display:flex; justify-content:space-between; font-size:11px; color:#999; }
+
+    .incident-card{
+        border-left:6px solid var(--accent); background:#FFFDF3; border-radius:8px;
+        padding:18px 20px; margin-bottom:16px;
+    }
+    .incident-card.ok{ border-left-color:var(--primary); background:#F1FCFB; }
+    .incident-title{ font-size:15px; font-weight:bold; margin-bottom:2px; }
+    .incident-sub{ font-size:12px; color:#888; margin-bottom:14px; }
+
+    .past-incidents details{
+        border-top:1px solid #eee; padding:10px 0;
+    }
+    .past-incidents details:first-of-type{ border-top:none; }
+    .past-incidents summary{
+        cursor:pointer; font-size:13px; font-weight:bold; display:flex; justify-content:space-between;
+        align-items:center; list-style:none;
+    }
+    .past-incidents summary::-webkit-details-marker{ display:none; }
+    .past-incidents summary .resolved-tag{
+        font-size:11px; font-weight:normal; background:rgba(78,205,196,.18); color:#238b83;
+        padding:2px 8px; border-radius:10px;
+    }
+    .past-incidents p{ font-size:12px; color:#666; margin-top:8px; line-height:1.5; }
+
+    .subscribe-card{ text-align:center; }
+    .discord-btn{
+        display:inline-block; background:var(--button); color:white; font-weight:bold; text-decoration:none;
+        padding:10px 20px; border-radius:8px; font-size:14px; margin-top:8px; transition:transform .15s, background .2s;
+    }
+    .discord-btn:hover{ background:var(--dark); transform:scale(1.05); }
+
+    footer{ text-align:center; padding:20px 0 40px; font-size:12px; color:#999; }
+    footer a{ color:#888; }
+
+    @media (max-width:600px){
+        .header-content{ flex-direction:column; text-align:center; }
+        .overall-banner{ flex-direction:column; text-align:center; }
+        .last-checked{ justify-content:center; }
+    }
+</style>
+<style id="sfc-dark-mode">
+/* ===== Dark mode (shared across all SFC pages) ===== */
+.settings-btn{width:38px;height:38px;padding:0;border:none;border-radius:50%;background:#292F36;color:#FFE66D;font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;user-select:none;transition:transform .2s,background-color .3s}
+.settings-btn:hover{background:#454545;transform:scale(1.1)}
+.settings-btn:focus-visible{outline:3px solid #FFE66D;outline-offset:2px}
+header nav ul{align-items:center}
+html[data-theme="dark"]{color-scheme:dark}
+html[data-theme="dark"] body{background-color:#14181d;color:#e8ecef}
+html[data-theme="dark"] header,
+html[data-theme="dark"] .hero{background-color:#000}
+html[data-theme="dark"] .settings-btn{background:#3a3f47}
+html[data-theme="dark"] .settings-btn:hover{background:#50565f}
+html[data-theme="dark"] header{box-shadow:0 2px 10px rgba(0,0,0,.5)}
+html[data-theme="dark"] .last-checked{color:#9aa4ad}
+html[data-theme="dark"] .refresh-btn{background:#1f252c}
+html[data-theme="dark"] .overall-banner{color:#e8ecef}
+html[data-theme="dark"] .overall-banner.state-maintenance{background:#2b2a1c}
+html[data-theme="dark"] .overall-banner.state-operational{background:#173230}
+html[data-theme="dark"] .overall-banner.state-outage{background:#35201f}
+html[data-theme="dark"] .overall-sub{color:#b0b9c1}
+html[data-theme="dark"] .card{background:#1f252c;box-shadow:0 3px 12px rgba(0,0,0,.5)}
+html[data-theme="dark"] .card .card-sub,
+html[data-theme="dark"] .incident-sub{color:#9aa4ad}
+html[data-theme="dark"] .component-row{border-bottom-color:#2e3640}
+html[data-theme="dark"] .status-badge.operational{color:#5fe0d6}
+html[data-theme="dark"] .status-badge.maintenance{color:#ffe66d}
+html[data-theme="dark"] .status-badge.outage{color:#ff8f8f}
+html[data-theme="dark"] .uptime-cell.unknown{background:#2e3640}
+html[data-theme="dark"] .uptime-meta{color:#8b96a0}
+html[data-theme="dark"] .incident-card{background:#2b2a1c}
+html[data-theme="dark"] .incident-card.ok{background:#173230}
+html[data-theme="dark"] .past-incidents details{border-top-color:#2e3640}
+html[data-theme="dark"] .past-incidents p{color:#b0b9c1}
+html[data-theme="dark"] .past-incidents summary .resolved-tag{color:#5fe0d6}
+html[data-theme="dark"] .discord-btn:hover{background:#454545}
+html[data-theme="dark"] footer a{color:#aab3bb}
+
+/* ===== Settings popup ===== */
+.sfc-overlay{position:fixed;top:0;right:0;bottom:0;left:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.5);font-family:inherit}
+.sfc-overlay[hidden]{display:none}
+.sfc-overlay *{font-family:inherit}
+.sfc-panel{width:100%;max-width:360px;background:#fff;color:#292F36;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.35);padding:18px 20px 8px;text-align:left}
+.sfc-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sfc-panel-head h2{font-size:22px;margin:0;color:inherit}
+.sfc-close{width:32px;height:32px;padding:0;border:none;border-radius:50%;background:transparent;color:inherit;font-size:22px;line-height:1;cursor:pointer}
+.sfc-close:hover{background:rgba(128,128,128,.2)}
+.sfc-close:focus-visible,.sfc-pill:focus-visible{outline:3px solid #FF6B6B;outline-offset:2px}
+.sfc-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid #e3e8ec;cursor:pointer}
+.sfc-row-text{display:flex;flex-direction:column;gap:2px}
+.sfc-row-label{font-size:17px;font-weight:bold}
+.sfc-row-sub{font-size:13px;opacity:.7}
+.sfc-pill{position:relative;flex-shrink:0;width:54px;height:30px;padding:0;border:none;border-radius:999px;background:#c5ced6;cursor:pointer;transition:background-color .2s}
+.sfc-pill::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .2s}
+.sfc-pill[aria-checked="true"]{background:#4ECDC4}
+.sfc-pill[aria-checked="true"]::after{transform:translateX(24px)}
+@media (prefers-reduced-motion:reduce){.sfc-pill,.sfc-pill::after,.settings-btn{transition:none}}
+html[data-theme="dark"] .sfc-panel{background:#1f252c;color:#e8ecef;box-shadow:0 12px 40px rgba(0,0,0,.7)}
+html[data-theme="dark"] .sfc-row{border-top-color:#2e3640}
+html[data-theme="dark"] .sfc-pill{background:#4a5058}
+html[data-theme="dark"] .sfc-pill[aria-checked="true"]{background:#4ECDC4}
+</style>
+<script>
+(function () {
+  var THEME_KEY = 'sfc-theme';        // saved dark/light choice (same key as before)
+  var DISGUISE_KEY = 'sfc-disguise';  // saved disguise choice: 'on' / 'off'
+  var DEFAULT_THEME = 'light';        // new visitors: 'light', 'dark', or 'system'
+  var DISGUISE_TITLE = 'New Tab';     // tab title while disguise mode is on
+  var DISGUISE_ICON = 'chromelogo.png'; // tab icon while disguise mode is on
+  var root = document.documentElement;
+  var memTheme = null, memDisguise = null;   // fallbacks if the browser blocks localStorage
+
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function write(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function getTheme() {
+    var v = read(THEME_KEY);
+    if (v === 'dark' || v === 'light') return v;
+    if (memTheme) return memTheme;
+    if (DEFAULT_THEME === 'system') return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return DEFAULT_THEME === 'dark' ? 'dark' : 'light';
+  }
+  function getDisguise() {
+    var v = read(DISGUISE_KEY);
+    if (v === 'on') return true;
+    if (v === 'off') return false;
+    return memDisguise === true;
+  }
+
+  // ---- dark mode ----
+  function applyTheme(t) { root.setAttribute('data-theme', t); }
+
+  // ---- disguise mode (tab title + icon) ----
+  // This script sits in <head> after <title> and the icon <link>, so these are this page's real ones.
+  var origTitle = document.title;
+  var origIcons = [].map.call(document.querySelectorAll('link[rel~="icon"]'), function (l) { return l.cloneNode(true); });
+  var shown = null;   // which disguise state the tab is currently showing
+
+  function applyDisguise(on) {
+    if (shown === on) { if (on && document.title !== DISGUISE_TITLE) document.title = DISGUISE_TITLE; return; }
+    var first = shown === null;
+    shown = on;
+    if (first && !on) return;   // page already shows its normal title and icon
+    // Remove EVERY existing icon link ("icon" and "shortcut icon"), then add one fresh one.
+    var olds = document.querySelectorAll('link[rel~="icon"]');
+    for (var i = olds.length - 1; i >= 0; i--) olds[i].parentNode.removeChild(olds[i]);
+    if (on) {
+      document.title = DISGUISE_TITLE;
+      var l = document.createElement('link');
+      l.rel = 'icon'; l.type = 'image/png'; l.href = DISGUISE_ICON;
+      document.head.appendChild(l);
+    } else {
+      document.title = origTitle;
+      origIcons.forEach(function (c) { document.head.appendChild(c.cloneNode(true)); });
+    }
+  }
+  // If anything else changes the title while disguise is on, put it back.
+  var titleEl = document.querySelector('title');
+  if (titleEl && window.MutationObserver) {
+    new MutationObserver(function () {
+      if (shown && document.title !== DISGUISE_TITLE) document.title = DISGUISE_TITLE;
+    }).observe(titleEl, { childList: true, characterData: true, subtree: true });
+  }
+
+  // Runs while <head> loads, so the right theme/title/icon show from the first moment on every page.
+  applyTheme(getTheme());
+  applyDisguise(getDisguise());
+
+  // ---- settings popup ----
+  var overlay = null, opener = null;
+
+  function build() {
+    overlay = document.createElement('div');
+    overlay.className = 'sfc-overlay';
+    overlay.hidden = true;
+    overlay.innerHTML = [
+      '<div class="sfc-panel" role="dialog" aria-modal="true" aria-labelledby="sfcSettingsTitle">',
+      '  <div class="sfc-panel-head"><h2 id="sfcSettingsTitle">Settings</h2><button type="button" class="sfc-close" aria-label="Close settings">\u00d7</button></div>',
+      '  <div class="sfc-row" data-setting="dark"><div class="sfc-row-text"><span class="sfc-row-label" id="sfcDarkLabel">Dark mode</span><span class="sfc-row-sub">Switch the site to a dark theme</span></div>',
+      '    <button type="button" class="sfc-pill" role="switch" aria-checked="false" aria-labelledby="sfcDarkLabel"></button></div>',
+      '  <div class="sfc-row" data-setting="disguise"><div class="sfc-row-text"><span class="sfc-row-label" id="sfcDisguiseLabel">Disguise mode</span><span class="sfc-row-sub">Tab shows \u201cNew Tab\u201d with a Chrome icon</span></div>',
+      '    <button type="button" class="sfc-pill" role="switch" aria-checked="false" aria-labelledby="sfcDisguiseLabel"></button></div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(overlay);
+  }
+  function syncPills() {
+    if (!overlay) return;
+    var states = { dark: getTheme() === 'dark', disguise: getDisguise() };
+    var rows = overlay.querySelectorAll('.sfc-row');
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].querySelector('.sfc-pill').setAttribute('aria-checked', states[rows[i].getAttribute('data-setting')] ? 'true' : 'false');
+    }
+  }
+  function openSettings(btn) {
+    if (!overlay) build();
+    syncPills();
+    opener = btn;
+    btn.setAttribute('aria-expanded', 'true');
+    overlay.hidden = false;
+    root.style.overflow = 'hidden';
+    overlay.querySelector('.sfc-pill').focus();
+  }
+  function closeSettings() {
+    overlay.hidden = true;
+    root.style.overflow = '';
+    if (opener) { opener.setAttribute('aria-expanded', 'false'); opener.focus(); opener = null; }
+  }
+  function toggle(name) {
+    if (name === 'dark') {
+      var t = getTheme() === 'dark' ? 'light' : 'dark';
+      memTheme = t; write(THEME_KEY, t); applyTheme(t);
+    } else if (name === 'disguise') {
+      var d = !getDisguise();
+      memDisguise = d; write(DISGUISE_KEY, d ? 'on' : 'off'); applyDisguise(d);
+    }
+    syncPills();
+  }
+
+  document.addEventListener('click', function (e) {
+    var gear = e.target.closest && e.target.closest('.settings-btn');
+    if (gear) { openSettings(gear); return; }
+    if (!overlay || overlay.hidden) return;
+    if (e.target === overlay || e.target.closest('.sfc-close')) { closeSettings(); return; }
+    var row = e.target.closest('.sfc-row');
+    if (row) toggle(row.getAttribute('data-setting'));
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!overlay || overlay.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeSettings(); return; }
+    if (e.key === 'Tab') {
+      var f = overlay.querySelectorAll('button'), first = f[0], last = f[f.length - 1];
+      if (!overlay.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  function resync() { applyTheme(getTheme()); applyDisguise(getDisguise()); syncPills(); }
+  document.addEventListener('DOMContentLoaded', resync);
+  // Changed in another tab/window: follow it.
+  window.addEventListener('storage', function (e) { if (e.key === THEME_KEY || e.key === DISGUISE_KEY || e.key === null) resync(); });
+  // Back/forward restoring a cached page: re-check the saved settings.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) resync(); });
+})();
+</script>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="header-content">
+            <a href="games.html" class="logo">School<span>Flash</span>Cards</a>
+            <nav>
+                <ul>
+                    <li><a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a></li>
+                    <li><a href="https://www.tiktok.com/@schoolflashcards" target="_blank">TikTok</a></li>
+                    <li><button type="button" class="settings-btn" aria-label="Settings" aria-haspopup="dialog" aria-expanded="false" title="Settings">⚙️</button></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="container">
+
+        <div class="last-checked">
+            <span id="lastCheckedText">Loading…</span>
+            <button class="refresh-btn" id="refreshBtn"><span class="refresh-icon" id="refreshIcon">🔄</span> Refresh</button>
+        </div>
+
+        <div class="overall-banner" id="overallBanner">
+            <div class="overall-icon" id="overallIcon">⏳</div>
+            <div>
+                <div class="overall-title" id="overallTitle">Loading status…</div>
+                <div class="overall-sub" id="overallSub"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Component Status</h2>
+            <p class="card-sub">"Auto" components are checked by a script every 10 minutes. The rest are updated by hand when something's known to be wrong.</p>
+            <div id="componentsList"></div>
+        </div>
+
+        <div class="card">
+            <h2>Active Incident</h2>
+            <div id="activeIncident"></div>
+        </div>
+
+        <div class="card past-incidents">
+            <h2>Past Incidents</h2>
+            <div id="pastIncidents"></div>
+        </div>
+
+        <div class="card subscribe-card">
+            <h2>Want a ping the second we're back?</h2>
+            <p class="card-sub">We only post real-time updates in one place.</p>
+            <a class="discord-btn" href="https://discord.gg/GnVUkcsfMw" target="_blank">🔔 Join the Discord</a>
+        </div>
+
+    </div>
+</main>
+
+<footer>
+    <div class="container">
+        <p>© 2026 SchoolFlashCards5 · Status auto-refreshes every 60s</p>
+    </div>
+</footer>
+
+<!-- ============================================================
+  FIREBASE + STATUS DATA
+  Two Firestore documents feed this page:
+    site/status-checks — written automatically every ~10 minutes by
+      sfc-worker.js's scheduled health check. Covers the only two
+      things here with a real backend to check: Game Library & CDN
+      (Firestore + the games page itself) and Discord Notifications
+      (whether the webhook proxy is actually configured).
+    site/status-page — written by hand from sfc-admin.html's Status
+      tab. Holds manual overrides (for anything, including the two
+      automated components — an admin override always wins over the
+      automated check while it's active) and the Past Incidents list.
+
+  Manual-only components (Site Search, Random Game Button) have no
+  backend to check automatically, so their uptime history just shows
+  "operational" for every past day and only reflects a live override
+  for today — there's nothing real to track further back than that.
+  The two automated components show REAL day-by-day history, but only
+  starting from whenever this system first went live; anything before
+  that isn't retroactively known and lives in Past Incidents instead.
+============================================================ -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3jxwyH9Pws4nhIT9ScDffk5CpHa99oMM",
+    authDomain: "pinkgame-1d4bf.firebaseapp.com",
+    projectId: "pinkgame-1d4bf",
+    storageBucket: "pinkgame-1d4bf.firebasestorage.app",
+    messagingSenderId: "531941128309",
+    appId: "1:531941128309:web:82e55394c6f48666a3603c",
+    measurementId: "G-WF5YT7S04W"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const HISTORY_DAYS = 45;
+
+  const COMPONENT_DEFS = [
+    { key: 'gameLibrary',           name: 'Game Library & CDN',   automated: true },
+    { key: 'discordNotifications',  name: 'Discord Notifications', automated: true },
+    { key: 'siteSearch',            name: 'Site Search',          automated: false },
+    { key: 'randomGame',            name: 'Random Game Button',   automated: false },
+  ];
+
+  const statusLabel = { operational: 'Operational', maintenance: 'Under Maintenance', outage: 'Down' };
+  const SEVERITY = { operational: 0, maintenance: 1, outage: 2 };
+
+  // Picks whichever of two statuses is worse (outage > maintenance >
+  // operational). Treats missing/'unknown' as "no opinion" so it never
+  // wins against a real recorded status.
+  function worseOf(a, b) {
+    if (!b || b === 'unknown') return a;
+    if (!a || a === 'unknown') return b;
+    return SEVERITY[b] > SEVERITY[a] ? b : a;
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function todayStr() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  // Merges the automated check + any active manual override into one
+  // "effective" status per component — an override wins while it's
+  // active (no "until" set, or "until" is still in the future).
+  function effectiveComponents(checks, statusPage) {
+    const overrides = (statusPage && statusPage.overrides) || {};
+    return COMPONENT_DEFS.map(def => {
+      const override = overrides[def.key];
+      const overrideActive = !!(override && override.status && (!override.until || Date.now() < override.until));
+      const check = (checks && checks[def.key]) || null;
+
+      const status = overrideActive ? override.status : (def.automated && check ? check.current : 'operational');
+      const note = overrideActive ? (override.note || '') : (def.automated && check ? (check.detail || '') : '');
+      const history = def.automated && check && Array.isArray(check.history) ? check.history : [];
+      const lastChecked = def.automated && check ? check.lastChecked : null;
+
+      return { ...def, status, note, history, lastChecked, overrideActive };
+    });
+  }
+
+  function buildUptimeRow(component) {
+    const today = todayStr();
+    const historyByDate = {};
+    component.history.forEach(h => { historyByDate[h.date] = h.status; });
+
+    let cellsHtml = '';
+    let knownDays = 0;
+    let upCount = 0;
+
+    for (let i = 0; i < HISTORY_DAYS; i++) {
+      const dayOffset = HISTORY_DAYS - 1 - i;
+      const cellDate = new Date(Date.now() - dayOffset * DAY_MS);
+      const dateKey = cellDate.toISOString().slice(0, 10);
+      const dateLabel = cellDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+      let state;
+      if (dateKey === today) {
+        // Show the WORSE of (a) how things look right now and (b) what's
+        // already recorded for today — otherwise an incident that starts
+        // and gets fixed within the same day vanishes from the bar the
+        // instant it's resolved, even though it genuinely happened.
+        const recordedToday = component.automated ? historyByDate[dateKey] : null;
+        state = worseOf(component.status, recordedToday);
+      } else if (component.automated) {
+        state = historyByDate[dateKey] || 'unknown'; // no recorded data that far back yet
+      } else {
+        state = 'operational'; // manual-only components: no history to check, assume fine
+      }
+
+      if (state !== 'unknown') { knownDays++; if (state === 'operational') upCount++; }
+      cellsHtml += `<div class="uptime-cell ${state}" title="${dateLabel} · ${state === 'unknown' ? 'No data yet' : statusLabel[state]}"></div>`;
+    }
+
+    const pct = knownDays > 0 ? ((upCount / knownDays) * 100).toFixed(1) : '—';
+    return { cellsHtml, pct };
+  }
+
+  function renderComponents(components) {
+    const list = document.getElementById('componentsList');
+    list.innerHTML = components.map(c => {
+      const { cellsHtml, pct } = buildUptimeRow(c);
+      const pulse = c.status !== 'operational' ? 'pulse' : '';
+      const autoTag = c.automated ? '<span class="auto-tag">· auto</span>' : '';
+      return `
+        <div class="component-row">
+            <div class="component-top">
+                <span class="component-name">${escapeHtml(c.name)}${autoTag}</span>
+                <span class="status-badge ${c.status}">
+                    <span class="status-dot ${c.status} ${pulse}"></span>
+                    ${statusLabel[c.status]}
+                </span>
+            </div>
+            <div class="uptime-row">${cellsHtml}</div>
+            <div class="uptime-meta">
+                <span>45 days ago</span>
+                <span>${pct === '—' ? '' : pct + '% uptime'}</span>
+                <span>today</span>
+            </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderActiveIncident(components) {
+    const affected = components.filter(c => c.status !== 'operational');
+    const container = document.getElementById('activeIncident');
+
+    if (affected.length === 0) {
+      container.innerHTML = `
+        <div class="incident-card ok">
+            <div class="incident-title">✅ No active incidents</div>
+            <div class="incident-sub" style="margin-bottom:0;">Everything is running normally.</div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = affected.map(c => `
+        <div class="incident-card">
+            <div class="incident-title">${escapeHtml(c.name)} — ${statusLabel[c.status]}</div>
+            <div class="incident-sub" style="margin-bottom:0;">${escapeHtml(c.note) || 'No further detail provided yet.'}</div>
+        </div>`).join('');
+  }
+
+  function renderOverallBanner(components) {
+    const banner = document.getElementById('overallBanner');
+    const icon = document.getElementById('overallIcon');
+    const title = document.getElementById('overallTitle');
+    const sub = document.getElementById('overallSub');
+
+    const affected = components.filter(c => c.status !== 'operational');
+    banner.classList.remove('state-operational', 'state-maintenance', 'state-outage');
+
+    if (affected.length === 0) {
+      banner.classList.add('state-operational');
+      icon.textContent = '✅';
+      title.textContent = 'All Systems Operational';
+      sub.textContent = 'Everything is running normally.';
+      return;
+    }
+
+    const names = affected.map(c => c.name).join(', ');
+    if (affected.some(c => c.status === 'outage')) {
+      banner.classList.add('state-outage');
+      icon.textContent = '🚨';
+      title.textContent = 'Partial Outage';
+    } else {
+      banner.classList.add('state-maintenance');
+      icon.textContent = '🛠️';
+      title.textContent = 'Scheduled Maintenance In Progress';
+    }
+    sub.textContent = `${names} affected — everything else is running normally.`;
+  }
+
+  function renderPastIncidents(incidents) {
+    const sorted = [...(incidents || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const el = document.getElementById('pastIncidents');
+
+    if (sorted.length === 0) {
+      el.innerHTML = '<p class="card-sub" style="margin:0;">No past incidents recorded.</p>';
+      return;
+    }
+
+    el.innerHTML = sorted.map(inc => {
+      const dateStr = inc.date
+        ? new Date(inc.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+        : '';
+      return `
+        <details>
+            <summary>
+                <span>${escapeHtml(inc.title)}</span>
+                <span class="resolved-tag">Resolved${dateStr ? ' · ' + dateStr : ''}</span>
+            </summary>
+            <p>${escapeHtml(inc.detail)}</p>
+        </details>`;
+    }).join('');
+  }
+
+  let lastCheckedAt = null;
+  function tickLastChecked() {
+    const el = document.getElementById('lastCheckedText');
+    if (!lastCheckedAt) { el.textContent = 'Loading…'; return; }
+    const secs = Math.floor((Date.now() - lastCheckedAt) / 1000);
+    if (secs < 5) el.textContent = 'Checked just now';
+    else if (secs < 60) el.textContent = `Checked ${secs}s ago`;
+    else el.textContent = `Checked ${Math.floor(secs / 60)}m ago`;
+  }
+
+  async function loadAndRender() {
+    try {
+      const [checksSnap, pageSnap] = await Promise.all([
+        getDoc(doc(db, 'site', 'status-checks')),
+        getDoc(doc(db, 'site', 'status-page')),
+      ]);
+      const checks = checksSnap.exists() ? checksSnap.data() : {};
+      const statusPage = pageSnap.exists() ? pageSnap.data() : {};
+
+      const components = effectiveComponents(checks, statusPage);
+      renderComponents(components);
+      renderOverallBanner(components);
+      renderActiveIncident(components);
+      renderPastIncidents(statusPage.incidents);
+
+      lastCheckedAt = Date.now();
+      tickLastChecked();
+    } catch (err) {
+      console.error('Failed to load status:', err);
+      document.getElementById('lastCheckedText').textContent = 'Could not load status';
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    const icon = document.getElementById('refreshIcon');
+    icon.classList.add('spin');
+    setTimeout(() => icon.classList.remove('spin'), 500);
+    loadAndRender();
+  });
+
+  loadAndRender();
+  setInterval(tickLastChecked, 1000);
+  setInterval(loadAndRender, 60000);
+</script>
+
+</body>
+</html>
